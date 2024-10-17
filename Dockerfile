@@ -1,30 +1,38 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+# Use an official Python runtime as a parent image
+FROM python:3.9-slim
+
+# Install .NET SDK
+RUN apt-get update && apt-get install -y wget && \
+    wget https://packages.microsoft.com/config/debian/11/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
+    dpkg -i packages-microsoft-prod.deb && \
+    apt-get update && \
+    apt-get install -y dotnet-sdk-6.0
+
+# Install Poetry
+RUN pip install poetry
+
+# Set the working directory in the container
 WORKDIR /app
 
-# Copy csproj and restore as distinct layers
-COPY SeleniumTests/*.csproj ./
-RUN dotnet restore
+# Copy the pyproject.toml and poetry.lock files
+COPY pyproject.toml poetry.lock* ./
 
-# Copy everything else and build
-COPY SeleniumTests/. ./
-RUN dotnet publish -c Release -o out
+# Install project dependencies
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi
 
-# Build runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
-WORKDIR /app
-COPY --from=build-env /app/out .
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-# Install Chrome and ChromeDriver
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
-    unzip \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update && apt-get install -y \
-    google-chrome-stable \
-    && wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`/chromedriver_linux64.zip \
-    && unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ \
-    && rm /tmp/chromedriver.zip
+# Install Selenium WebDriver
+RUN apt-get install -y wget unzip && \
+    wget https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz && \
+    tar -xvzf geckodriver-v0.30.0-linux64.tar.gz && \
+    chmod +x geckodriver && \
+    mv geckodriver /usr/local/bin/
 
-ENTRYPOINT ["dotnet", "SeleniumTests.dll"]
+# Make port 80 available to the world outside this container
+EXPOSE 80
+
+# Run tests when the container launches
+CMD ["bash", "run_tests.sh"]
