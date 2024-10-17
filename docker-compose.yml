@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  python-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: python-auth
+    container_name: python-auth-container
+    ports:
+      - "8000:8000"
+
+  powershell-auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.powershell
+    image: powershell-auth
+    container_name: powershell-auth-container
+    ports:
+      - "8080:8080"
+
+  selenium-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: selenium-tests
+    container_name: selenium-tests-container

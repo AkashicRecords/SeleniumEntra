@@ -1,0 +1,9 @@
+FROM mcr.microsoft.com/powershell:lts-windowsservercore-1809
+
+WORKDIR /app
+
+COPY PowerShellAuth.ps1 .
+
+RUN Install-Module MSAL.PS -Force -AllowClobber
+
+CMD ["pwsh", "-File", "PowerShellAuth.ps1"]

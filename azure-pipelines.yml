@@ -1,0 +1,28 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: DockerCompose@0
+  inputs:
+    containerregistrytype: 'Azure Container Registry'
+    azureSubscription: 'Your-Azure-Subscription'
+    azureContainerRegistry: '{"loginServer":"your-registry.azurecr.io", "id" : "/subscriptions/your-subscription-id/resourceGroups/your-resource-group/providers/Microsoft.ContainerRegistry/registries/your-registry"}'
+    dockerComposeFile: '**/docker-compose.yml'
+    action: 'Build services'
+
+- task: DockerCompose@0
+  inputs:
+    containerregistrytype: 'Azure Container Registry'
+    azureSubscription: 'Your-Azure-Subscription'
+    azureContainerRegistry: '{"loginServer":"your-registry.azurecr.io", "id" : "/subscriptions/your-subscription-id/resourceGroups/your-resource-group/providers/Microsoft.ContainerRegistry/registries/your-registry"}'
+    dockerComposeFile: '**/docker-compose.yml'
+    action: 'Push services'
+
+- task: AzureWebAppContainer@1
+  inputs:
+    azureSubscription: 'Your-Azure-Subscription'
+    appName: 'your-webapp-name'
+    containers: 'your-registry.azurecr.io/selenium-tests:$(Build.BuildId)'
